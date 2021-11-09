@@ -1,0 +1,19 @@
+version: "3"
+services:
+  activemq-artemis:
+    container_name: activemq-artemis
+    image: vromero/activemq-artemis
+    environment:
+      - ARTEMIS_USERNAME=guest
+      - ARTEMIS_PASSWORD=guest
+    ports:
+      - 5672:5672
+      - 8161:8161
+      - 61616:61616
+      - 61613:61613
+  mysql:
+    container_name: mysql_messaging
+    build: ./mysql
+    image: mysql_pix:v1
+    ports:
+      - 3306:3306
