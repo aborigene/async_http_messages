@@ -1,16 +1,16 @@
-# legacy_messaging_system_dynatrace_sdk
+# async_http_messages
 
-The aim of this lab is to demonstrate how to use the Dynatrace SDK to overcome difficult situations on not supported technology. This lab consists of 4 microservices that communicate with each other throug a legacy messaging system or through a technology no supported.
+This is a simple application demonstrating the usage of Dynatrace SDK to correlate two different async transactions.
 
 ## Lab details
 
-Below is the exact flow for this lab:
+PixAgendamento simulates the begining of isntant wire transfer when a PUT is received.
+Pix.API is a different process that will receive GET continuously until the whole process clears.
 
- -> bacen_receiver (.NetCore) -> ActiveMQ (not supported on .NetCore) -> bacen_processor (.NetCore) -> ActiveMQ (not supported on .NetCore) -> pix_receiver (Java) -> Legacy messaging system (MySQL bases messagin system) -> pix_sensibiliza (Java) -> File on disk
+In normal circunstances these two transactions will be on different PurePaths, using the SDK will allow two things:
 
-With the Dynatrace SDK it is possible to create connection on these not supported messaging systems. Here the challenge is to add the Dynatrace correlation header to the messages. So we instrumente the code with our SDK. We them collect ou header from the Dynatrace SDK and we add that to the message property. The process is the same for .NETCore and Java.
-
-Attention here is that we must be able to add the header without breaking the application. This is easy for ActiveMQ for the legacy DB based messaging system this may be a problem. On this lab correlation works, but on actual customers there may be no space to propagate this header without breaking the application.
+- Both transactions to be placed on the same PurePath
+- Add the whole timing through a Custom Request Attribute
 
 ## Requirements
 
@@ -18,53 +18,33 @@ Attention here is that we must be able to add the header without breaking the ap
 - docker
 - docker-compose
 - .netCore
-- node modules:
-    - opentelemetry/api 1.0.3,
-    - opentelemetry/exporter-jaeger: 0.24.0,
-    - opentelemetry/sdk-node: 0.24.0,
-    - opentelemetry/sdk-trace-base: 0.24.1-alpha.4,
-    - express: 4.17.1,
-    - mongoose: 6.0.4,
-    - node-rdkafka: 2.11.0,
-    - uuid: 8.3.2
-    - just run ```npm install``` on the base folder for this example and all dependencies will be installed.
-- Jaeger (support for jaegertracing/all-in-one:1.25 and older because of Go version)
-- Kafka broker running locally
-- MongoDB
-- Just ```run docker-compose up -d``` and this will bring up Jaeger, Kafka and MongoDB on containers.
-- Dynatrace
+- JDK
 
 ## Starting the lab
 
-Make sure that Docker is running.
 
-1. Install dependencies:
-```
-npm install
-```
-2. Bring requirements up:
+
+1. Go into each of the folders and compile the applications
+  1. For dotnet build the solutions
+  2. For the Java part, instal using Maven wraper present on the repository: ```mvn clean package -DskipTests=true```
+2. Bring requirements up. This will bring up Mysql and ActiveMQ
 ```
 docker-compose up -d
 ```
-3. Bring producer up:
+3. Start PixAgendament, on the folder with the binaries execute:
 ```
-node producer.js
+.\PixAgendamento.exe
 ```
-4. On a separate terminal window bring consumer up:
+4. Start Java part. On the project root run:
 ```
-node consumer-flow.js
+java -jar target/pix_processor-0.0.1-SNAPSHOT.jar
 ```
-5. Send an HTTP request to node:
+5. Start PixAPI, on the folder with the binaries execute:
 ```
-curl "127.0.0.1:8081?message=Sample%20Message%201234"
+.\Pix.API.exe --urls="http://localhost:5005"
 ```
-6. Generate traffic using the traffic generator:
+6. Send requests to the APIs. This will send request locally to the 
 ```
 ./curl.sh
 ```
-
-## TODO
-
-1. Make the information from the message be added to the MongoDB, right now it always insert into MongoDB the same static data.
-2. Add everything, incluidng application code and dependencies to docker so docker-compose can bring everything up with just one command.
 
